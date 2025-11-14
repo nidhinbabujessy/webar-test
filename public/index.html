@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.4/dist/mindar-image.min.js"></script>
+  <script src="../Build/Build.loader.js"></script>
+  <style>
+    body, html {
+      margin: 0;
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+      background: black;
+    }
+    #unityContainer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+<div id="unityContainer"></div>
+<script>
+  let unityInstance;
+
+  async function startAR() {
+    const mindar = new window.MINDAR.Image({
+      container: document.body,
+      imageTargetSrc: "marker.mind"
+    });
+
+    const { renderer, scene, camera } = mindar;
+
+    unityInstance = await createUnityInstance(
+      document.querySelector("#unityContainer"),
+      {
+        dataUrl: "../Build/Build.data",
+        frameworkUrl: "../Build/Build.framework.js",
+        codeUrl: "../Build/Build.wasm",
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "DefaultCompany",
+        productName: "WebARImageTracking",
+        productVersion: "1.0"
+      }
+    );
+
+    mindar.start();
+
+    renderer.setAnimationLoop(() => {
+      renderer.render(scene, camera);
+
+      const anchor = mindar.controller.getAnchors()[0];
+      if (!anchor || !anchor.group.visible) return;
+
+      const pose = {
+        position: anchor.group.position,
+        rotation: anchor.group.quaternion
+      };
+
+      unityInstance.SendMessage("ARContent", "SetPose", JSON.stringify(pose));
+    });
+  }
+
+  startAR();
+</script>
+</body>
+</html>
+
